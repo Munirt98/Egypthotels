@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Egypt Hotels & Trips</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    header { text-align: center; margin-bottom: 20px; }
+    header h1 { margin: 0; font-size: 2em; }
+    header p { margin: 5px 0 0; color: #555; }
+    .date-picker { text-align: center; margin-bottom: 20px; }
+    .date-picker label { margin: 0 10px; font-size: 1em; }
+    .add-item-form, .filters, .hotel-list, .summary, .request-form { margin-bottom: 20px; }
+    .add-item-form, .request-form { background: #fff; padding: 20px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .add-item-form h2 { margin-top: 0; }
+    .form-row { margin-bottom: 10px; }
+    .form-row label { display: block; margin-bottom: 4px; color: #333; font-size: 0.9em; }
+    .form-row select, .form-row input { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+    .filters { display: flex; justify-content: space-between; flex-wrap: wrap; }
+    .category-nav button { margin: 5px; padding: 8px 12px; border: none; background: #007BFF; color: #fff; cursor: pointer; border-radius: 4px; }
+    .category-nav button.active { background: #0056b3; }
+    .sort { display: flex; align-items: center; margin: 5px; }
+    .sort label { margin-right: 8px; }
+    .sort select, .sort button { margin-left: 8px; padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; }
+    .hotel-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .hotel-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .hotel-card img { width: 100%; height: 200px; object-fit: cover; }
+    .hotel-info { padding: 15px; }
+    .hotel-info h3 { margin: 0 0 10px; font-size: 1.2em; }
+    .summary { font-size: 1.2em; text-align: right; }
+    .request-form button, .add-item-form button { padding: 10px 20px; border: none; background: #28a745; color: #fff; cursor: pointer; border-radius: 4px; font-size: 1em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Egypt Hotels & Trips</h1>
+    <p>From 01 May Till 30 May 2025</p>
+  </header>
+
+  <!-- Date selectors -->
+  <div class="date-picker">
+    <label>Check-in: <input type="date" id="checkIn"></label>
+    <label>Check-out: <input type="date" id="checkOut"></label>
+  </div>
+
+  <!-- Add new item -->
+  <div class="add-item-form">
+    <h2>Add New Hotel/Trip</h2>
+    <div class="form-row">
+      <label>Category</label>
+      <select id="newCategory">
+        <option value="Cairo Hotels">Cairo Hotels</option>
+        <option value="Alexandria Hotels">Alexandria Hotels</option>
+        <option value="Trips">Trips</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Item Name</label>
+      <input type="text" id="newName" placeholder="Enter hotel or trip name" />
+    </div>
+    <div class="form-row">
+      <label>Image URL</label>
+      <input type="text" id="newImage" placeholder="Enter image URL" />
+    </div>
+    <div class="form-row">
+      <label>Base Price (per night for Single)</label>
+      <input type="number" id="newBasePrice" placeholder="Enter base price" />
+    </div>
+    <div class="form-row">
+      <label>Supplement Label</label>
+      <input type="text" id="newSupplement" placeholder="e.g. B.B Supplement: $15 per meal" />
+    </div>
+    <div class="form-row">
+      <label>Early Fee (per room)</label>
+      <input type="number" id="newEarlyFee" placeholder="Enter early fee" />
+    </div>
+    <button id="addItemButton" type="button">Add Item</button>
+  </div>
+
+  <!-- Filters & sorting -->
+  <div class="filters">
+    <div class="category-nav">
+      <button data-category="All" class="active">All</button>
+      <button data-category="Cairo Hotels">Cairo Hotels</button>
+      <button data-category="Alexandria Hotels">Alexandria Hotels</button>
+      <button data-category="Trips">Trips</button>
+    </div>
+    <div class="sort">
+      <label for="sortSelect">Sort By</label>
+      <select id="sortSelect">
+        <option value="name-asc">Name: A to Z</option>
+        <option value="name-desc">Name: Z to A</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+      </select>
+      <button id="clearSort" type="button">Clear Sort</button>
+    </div>
+  </div>
+
+  <!-- Item list -->
+  <div class="hotel-list" id="hotelList"></div>
+
+  <!-- Total summary -->
+  <div class="summary">
+    Total: $<span id="totalPrice">0.00</span>
+  </div>
+
+  <!-- Request form -->
+  <form class="request-form" id="requestForm">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" placeholder="example@example.com" required>
+    <label for="guestName">Guest Name</label>
+    <input type="text" id="guestName" name="guestName" placeholder="First Name Last Name" required>
+    <button type="submit">Send a Request</button>
+  </form>
+
+  <script>
+    // In-memory data
+    const hotelData = [
+      { id: 1, category: 'Cairo Hotels', name: 'Mar Charbel Hotel Cairo - 4 Stars', image: 'https://via.placeholder.com/400x200?text=Mar+Charbel', basePrice: 55, supplementLabel: 'B.B Supplement: $15 per meal', earlyFee: 25 },
+      { id: 2, category: 'Cairo Hotels', name: 'Shams Hotel - 3 Stars',      image: 'https://via.placeholder.com/400x200?text=Shams+Hotel',        basePrice: 40, supplementLabel: '',                              earlyFee: 0  },
+      { id: 3, category: 'Cairo Hotels', name: 'Hilton Cairo Nile Maadi - 5 Stars', image: 'https://via.placeholder.com/400x200?text=Hilton+Cairo+Nile+Maadi', basePrice: 177, supplementLabel: 'B.B Supplement: $20 per meal', earlyFee: 0  }
+    ];
+
+    // DOM refs
+    const hotelListEl = document.getElementById('hotelList');
+    const totalEl     = document.getElementById('totalPrice');
+
+    // Date utilities
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
+    }
+    function computeNights() {
+      const inDate  = new Date(document.getElementById('checkIn').value);
+      const outDate = new Date(document.getElementById('checkOut').value);
+      const diff    = (outDate - inDate) / (1000*60*60*24);
+      return diff > 0 ? diff : 0;
+    }
+
+    // Create a card element
+    function createCard(item) {
+      const card = document.createElement('div');
+      card.className = 'hotel-card';
+      card.dataset.category  = item.category;
+      card.dataset.basePrice = item.basePrice;
+      card.dataset.earlyFee  = item.earlyFee;
+
+      card.innerHTML = `
+        <img src="${item.image}" alt="${item.name}">
+        <div class="hotel-info">
+          <h3>${item.name}</h3>
+          <p>${item.supplementLabel}</p>
+
+          <div class="form-row">
+            <label><input type="checkbox" class="select-item" checked> Select</label>
+          </div>
+
+          <div class="form-row">
+            <label>Room Type</label>
+            <select class="roomType">
+              <option value="1">Single</option>
+              <option value="2">Double</option>
+              <option value="3">Triple</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Rooms</label>
+            <select class="roomNumber">
+              ${[1,2,3,4].map(n => `<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Early Check-in</label>
+            <select class="early">
+              <option value="0">No</option>
+              <option value="${item.earlyFee}">Yes + $${item.earlyFee}</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Nights: <span class="nightsCount">0</span></label>
+          </div>
+
+          <div class="form-row">
+            <label>Price: $<span class="price">0.00</span></label>
+          </div>
+        </div>
+      `;
+
+      // Event listeners to recalc
+      card.querySelector('.select-item').addEventListener('change', updateTotal);
+      card.querySelector('.roomType').addEventListener('change', () => updatePrice(card));
+      card.querySelector('.roomNumber').addEventListener('change', () => updatePrice(card));
+      card.querySelector('.early').addEventListener('change', () => updatePrice(card));
+
+      return card;
+    }
+
+    // Render all
+    function renderList(data) {
+      hotelListEl.innerHTML = '';
+      data.forEach(item => hotelListEl.appendChild(createCard(item)));
+      updateAll();
+    }
+
+    // Calculate single card price
+    function updatePrice(card) {
+      const nights     = computeNights();
+      card.querySelector('.nightsCount').textContent = nights;
+
+      const rooms      = +card.querySelector('.roomNumber').value;
+      const typeMult   = +card.querySelector('.roomType').value;
+      const basePrice  = +card.dataset.basePrice;
+      const earlyFee   = +card.querySelector('.early').value;
+
+      const roomCost   = basePrice * typeMult * nights * rooms;
+      const earlyCost  = earlyFee * rooms;
+      const totalCost  = roomCost + earlyCost;
+
+      card.querySelector('.price').textContent = totalCost.toFixed(2);
+      updateTotal();
+    }
+
+    // Update all cards
+    function updateAll() {
+      document.querySelectorAll('.hotel-card').forEach(card => updatePrice(card));
+    }
+
+    // Sum total of selected
+    function updateTotal() {
+      const sum = Array.from(document.querySelectorAll('.hotel-card')).reduce((acc, card) => {
+        return card.querySelector('.select-item').checked
+          ? acc + parseFloat(card.querySelector('.price').textContent)
+          : acc;
+      }, 0);
+      totalEl.textContent = sum.toFixed(2);
+    }
+
+    // Filter categories
+    document.querySelectorAll('.category-nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cat = btn.dataset.category;
+        document.querySelectorAll('.hotel-card').forEach(card => {
+          card.style.display = cat === 'All' || card.dataset.category === cat ? 'block' : 'none';
+        });
+      });
+    });
+
+    // Sort cards
+    document.getElementById('sortSelect').addEventListener('change', e => {
+      const val = e.target.value;
+      const cards = Array.from(document.querySelectorAll('.hotel-card'));
+      cards.sort((a, b) => {
+        if (val === 'name-asc') return a.querySelector('h3').textContent.localeCompare(b.querySelector('h3').textContent);
+        if (val === 'name-desc') return b.querySelector('h3').textContent.localeCompare(a.querySelector('h3').textContent);
+        if (val === 'price-asc') return parseFloat(a.querySelector('.price').textContent) - parseFloat(b.querySelector('.price').textContent);
+        if (val === 'price-desc') return parseFloat(b.querySelector('.price').textContent) - parseFloat(a.querySelector('.price').textContent);
+      });
+      cards.forEach(c => hotelListEl.appendChild(c));
+    });
+
+    document.getElementById('clearSort').addEventListener('click', () => {
+      document.getElementById('sortSelect').value = 'name-asc';
+      renderList(hotelData);
+    });
+
+    // Add new item listener
+    document.getElementById('addItemButton').addEventListener('click', () => {
+      const cat   = document.getElementById('newCategory').value;
+      const name  = document.getElementById('newName').value.trim();
+      const img   = document.getElementById('newImage').value.trim();
+      const base  = +document.getElementById('newBasePrice').value;
+      const supp  = document.getElementById('newSupplement').value.trim();
+      const early = +document.getElementById('newEarlyFee').value;
+      if (!name || !img || !base) return alert('Please fill in name, image URL, and base price.');
+      const id = hotelData.length ? hotelData[hotelData.length-1].id + 1 : 1;
+      const newItem = { id, category: cat, name, image: img, basePrice: base, supplementLabel: supp, earlyFee: early };
+      hotelData.push(newItem);
+      const card = createCard(newItem);
+      hotelListEl.appendChild(card);
+      updatePrice(card);
+    });
+
+    // Date change listeners
+    document.getElementById('checkIn').addEventListener('change', updateAll);
+    document.getElementById('checkOut').addEventListener('change', updateAll);
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      const today    = new Date();
+      const tomorrow = new Date(); tomorrow.setDate(today.getDate()+1);
+      document.getElementById('checkIn').value  = formatDate(today);
+      document.getElementById('checkOut').value = formatDate(tomorrow);
+      renderList(hotelData);
+    });
+
+    // Placeholder submit
+    document.getElementById('requestForm').addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Request sent!');
+    });
+  </script>
+</body>
+</html>

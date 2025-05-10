@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Tech Dept Chatbot</title>
-  <!-- 1) Bot Framework Web Chat script -->
+  <!-- Bot Framework Web Chat -->
   <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
   <style>
     body { font-family: sans-serif; margin: 0; padding: 1rem; }
@@ -13,32 +13,37 @@
 </head>
 <body>
   <h1>Technology Department Support</h1>
-  <div id="webchat"></div>
+  <div id="webchat">Loading chat…</div>
 
   <script>
     (async function() {
-      // 2) Your authenticated token endpoint
-      const TOKEN_ENDPOINT =
+      const TOKEN_ENDPOINT = 
         'https://default0830d206e1124b4ea8be1fad7ea804.bd.environment.api.powerplatform.com' +
-        '/copilotstudio/dataverse-backed/authenticated/bots/' +
-        'cr10a_technologyDepartmentChatbot/conversations?api-version=2022-03-01-preview';
+        '/copilotstudio/dataverse-backed/authenticated/' +
+        'bots/cr10a_technologyDepartmentChatbot/conversations?api-version=2022-03-01-preview';
 
-      // 3) Fetch Direct Line token + conversationId
-      const res = await fetch(TOKEN_ENDPOINT, { method: 'GET', credentials: 'include' });
-      if (!res.ok) throw new Error('Token fetch failed: ' + res.status);
-      const { token, conversationId } = await res.json();
+      try {
+        // 1. Fetch a Direct Line token + conversationId
+        const res = await fetch(TOKEN_ENDPOINT, {
+          method: 'GET',
+          credentials: 'include'      // include your auth cookie/session
+        });
+        if (!res.ok) throw new Error(`Token fetch failed (${res.status})`);
+        const { token, conversationId } = await res.json();
 
-      // 4) Render the chat widget
-      window.WebChat.renderWebChat({
-        directLine: window.WebChat.createDirectLine({ token, conversationId }),
-        userID: window.crypto.randomUUID(),
-        username: 'Parent',
-        locale: 'en-US'
-      }, document.getElementById('webchat'));
-    })().catch(err => {
-      console.error(err);
-      document.getElementById('webchat').innerText = '❌ Chat load failed. See console for details.';
-    });
+        // 2. Render Web Chat into #webchat
+        window.WebChat.renderWebChat({
+          directLine: window.WebChat.createDirectLine({ token, conversationId }),
+          userID: window.crypto.randomUUID(),
+          username: 'Parent',
+          locale: 'en-US'
+        }, document.getElementById('webchat'));
+      } catch (err) {
+        console.error(err);
+        document.getElementById('webchat').innerText =
+          '❌ Unable to load chatbot. Check console for errors.';
+      }
+    })();
   </script>
 </body>
 </html>

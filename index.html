@@ -5,6 +5,37 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 1) Include Web Chat script -->
+<script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+
+<!-- 2) Add a container where the chat will live -->
+<div id="webchat" style="min-height:400px; width:100%;"></div>
+
+<!-- 3) Initialize the chat -->
+<script>
+  (async function() {
+    // Replace with your own token endpoint URL
+    const TOKEN_ENDPOINT = 
+      'https://default0830d206e1124b4ea8be1fad7ea804.bd.environment.api.powerplatform.com' +
+      '/copilotstudio/dataverse-backed/authenticated/bots/' +
+      'cr10a_technologyDepartmentChatbot/conversations?api-version=2022-03-01-preview';
+
+    // 3a) Get Direct Line token + conversationId
+    const res = await fetch(TOKEN_ENDPOINT, { method: 'GET', credentials: 'include' });
+    const { token, conversationId } = await res.json();  
+    // :contentReference[oaicite:0]{index=0}
+
+    // 3b) Render the Web Chat
+    window.WebChat.renderWebChat({
+      directLine: window.WebChat.createDirectLine({ token, conversationId }),
+      userID: window.crypto.randomUUID(),       // or a stable parent ID
+      username: 'Parent',
+      locale: 'en-US'
+    }, document.getElementById('webchat'));
+  })().catch(err => console.error(err));
+</script>
+
   <title>Egypt Hotels & Trips</title>
 
   <!-- Firebase SDKs -->
